@@ -1,3 +1,9 @@
+// TODO: lots of copy-paste boilerplate + certain functions running more than
+// once without need, i.e. GetEnv. Might be interesting to use functional
+// options here to allow for some level of composability.
+//
+// ```go
+// tool.Test(myDirectory, tool.WithEnv(localEnv))
 package tool
 
 import (
