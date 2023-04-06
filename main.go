@@ -38,12 +38,37 @@ func main() {
 				return
 			}
 
-			fmt.Printf("👀 found %d services\n\n", len(directories))
+			fmt.Printf("👀 found %d services\n", len(directories))
+
+			var filters []string
+			if services := cmd.Flag("services").Value.String(); services != "" {
+				fmt.Println("building only:", services)
+				filters = strings.Split(services, ",")
+			}
 
 			var wg sync.WaitGroup
-			wg.Add(len(directories))
 
 			for i := range directories {
+				// If there are filters, then only build the provided ones.
+				// Otherwise, build all.
+				if len(filters) > 0 {
+					s := strings.Split(directories[i], "/")
+					serviceName := s[len(s)-1]
+
+					doBuild := false
+					for j := range filters {
+						if filters[j] == serviceName {
+							doBuild = true
+							break
+						}
+					}
+
+					if !doBuild {
+						continue
+					}
+				}
+
+				wg.Add(1)
 				go func(dir string) {
 					defer wg.Done()
 
