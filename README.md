@@ -8,11 +8,25 @@ You just have to run `hydra build` in any given directory and it will look for
 Go module services to build:
 
 ```sh
-$ hydra build 
+$ hydra build --owners @Manzanit0 --names hydra
 🔎 looking for Go services...
 👀 found 1 services
+🍕 filtering services with names: hydra
+🔑 filtering services owned by: @Manzanit0
 🏗  building service hydra
-✅ hydra built succesfully in 387ms!
+✅ hydra built succesfully in 354ms!
+```
+
+In case you want to run tests instead of building:
+
+```sh
+$ hydra test
+🔎 looking for Go services...
+👀 found 1 services
+✅ hydra test succesfully in 7250ms!
+?   	github.com/manzanit0/hydra	[no test files]
+?   	github.com/manzanit0/hydra/pkg/owner	[no test files]
+?   	github.com/manzanit0/hydra/pkg/tool	[no test files]
 ```
 
 ## FAQ
