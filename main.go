@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/manzanit0/hydra/pkg/owner"
 	"github.com/manzanit0/hydra/pkg/tool"
 	"github.com/spf13/cobra"
 )
@@ -41,9 +42,22 @@ func main() {
 			fmt.Printf("👀 found %d services\n", len(directories))
 
 			var filters []string
-			if services := cmd.Flag("services").Value.String(); services != "" {
-				fmt.Println("building only:", services)
+			if services := cmd.Flag("names").Value.String(); services != "" {
+				fmt.Println("🍕 filtering services with names:", services)
 				filters = strings.Split(services, ",")
+			}
+
+			var co *owner.Owners
+			var owners []string
+			if ownersStr := cmd.Flag("owners").Value.String(); ownersStr != "" {
+				fmt.Println("🔑 filtering services owned by:", ownersStr)
+				owners = strings.Split(ownersStr, ",")
+
+				co, err = owner.GetCodeOwners()
+				if err != nil {
+					fmt.Println("💥 failed to get CODEOWNERS:", err.Error())
+					return
+				}
 			}
 
 			var wg sync.WaitGroup
@@ -51,21 +65,45 @@ func main() {
 			for i := range directories {
 				// If there are filters, then only build the provided ones.
 				// Otherwise, build all.
+				doBuild := true
+
 				if len(filters) > 0 {
 					s := strings.Split(directories[i], "/")
 					serviceName := s[len(s)-1]
 
-					doBuild := false
+					found := false
 					for j := range filters {
 						if filters[j] == serviceName {
-							doBuild = true
+							found = true
 							break
 						}
 					}
 
-					if !doBuild {
-						continue
+					if !found {
+						doBuild = false
 					}
+				}
+
+				if doBuild && len(owners) > 0 {
+					s := strings.Split(directories[i], "/")
+					serviceName := s[len(s)-1]
+
+					for j := range owners {
+						owns, err := co.Owns(directories[i], owners[j])
+						if err != nil {
+							fmt.Printf("💥 failed to check ownership of %s: %s\n", serviceName, err.Error())
+							continue
+						}
+
+						if owns {
+							doBuild = true
+							break
+						}
+					}
+				}
+
+				if !doBuild {
+					continue
 				}
 
 				wg.Add(1)
@@ -92,7 +130,8 @@ func main() {
 		},
 	}
 
-	buildCmd.PersistentFlags().String("services", "", "Filter which services to build")
+	buildCmd.PersistentFlags().String("names", "", "Filter which services to build by NAME")
+	buildCmd.PersistentFlags().String("owners", "", "Filter services to build by CODEOWNERS")
 
 	testCmd := &cobra.Command{
 		Use:   "test",
